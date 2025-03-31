@@ -1,8 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Heebo:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-playfair: var(--font-playfair);
+  --font-dm-serif: var(--font-dm-serif);
+  --font-heebo: var(--font-heebo);
 }
 
 @theme inline {
@@ -23,4 +27,91 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.font-playfair {
+  font-family: var(--font-playfair);
+}
+
+/* Playfair Display Styles */
+.playfair-display-regular {
+  font-family: var(--font-playfair);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.playfair-display-medium {
+  font-family: var(--font-playfair);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.playfair-display-semibold {
+  font-family: var(--font-playfair);
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.playfair-display-bold {
+  font-family: var(--font-playfair);
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* DM Serif Text Styles */
+.dm-serif-text-regular {
+  font-family: var(--font-dm-serif);
+  font-weight: 400;
+  font-style: normal;
+}
+
+.dm-serif-text-regular-italic {
+  font-family: var(--font-dm-serif);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Heebo Styles */
+.heebo-light {
+  font-family: var(--font-heebo);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.heebo-regular {
+  font-family: var(--font-heebo);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.heebo-medium {
+  font-family: var(--font-heebo);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.heebo-bold {
+  font-family: var(--font-heebo);
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-playfair: 'Playfair Display', serif;
+    --font-dm-serif: 'DM Serif Text', serif;
+    --font-heebo: 'Heebo', sans-serif;
+  }
 }

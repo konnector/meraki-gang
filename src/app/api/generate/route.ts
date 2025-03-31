@@ -14,27 +14,20 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: `You are an AI assistant specialized in creating clear, practical spreadsheet structures. 
+          content: `You are an AI assistant that creates spreadsheets. Provide two outputs:
+          1. A description of the spreadsheet
+          2. A JSON structure with headers and formulas.
           
-          Format your responses following this structure:
-          1. Start with a brief title in bold
-          2. Add a one-line description of the spreadsheet's purpose
-          
-          ## Column Structure
-          - List each column with its purpose
-          - Use \`A1\` format for cell references
-          - Include sample values where helpful
-          
-          ## Formulas and Calculations
-          - Show exact formulas using \`=FORMULA()\` format
-          - Explain each formula's purpose
-          - Include any conditional formatting rules
-          
-          ## Tips
-          - Add practical usage tips
-          - Mention any important considerations
-          
-          Keep everything concise and practical. Focus on making the spreadsheet immediately usable.`
+          Return your response in this format:
+          ---DESCRIPTION---
+          [Your description here]
+          ---STRUCTURE---
+          {
+            "headers": ["Column1", "Column2", ...],
+            "formulas": [
+              {"cell": "C1", "formula": "=A1+B1"}
+            ]
+          }`
         },
         {
           role: "user",
@@ -43,11 +36,22 @@ export async function POST(req: Request) {
       ],
     });
 
-    // Process the response to ensure proper markdown rendering
-    const formattedResponse = completion.choices[0].message.content?.replace(/`/g, '**');
+    const response = completion.choices[0].message.content || '';
+    
+    // Parse the response
+    const [description, structureStr] = response.split('---STRUCTURE---');
+    const cleanDescription = description.replace('---DESCRIPTION---', '').trim();
+    
+    let structure = { headers: [], formulas: [] };
+    try {
+      structure = JSON.parse(structureStr.trim());
+    } catch (e) {
+      console.error('Failed to parse structure:', e);
+    }
 
     return NextResponse.json({ 
-      result: formattedResponse,
+      result: cleanDescription,
+      structure,
       success: true 
     });
 
