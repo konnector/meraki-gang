@@ -1,13 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { utils, write } from 'xlsx';
-import SpreadsheetPreview from '@/components/SpreadsheetPreview';
 
 type SpreadsheetData = {
-  headers: string[];
-  data: Record<string, string | number>[];
-  formulas: string[];
+  result: string;
+  success: boolean;
 };
 
 export default function Home() {
@@ -45,46 +42,6 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const exportToExcel = () => {
-    if (!spreadsheetData) return;
-
-    const ws = utils.json_to_sheet(spreadsheetData.data);
-    const wb = utils.book_new();
-    utils.book_append_sheet(wb, ws, 'Sheet1');
-    
-    // Apply formulas if any
-    spreadsheetData.formulas.forEach((formula) => {
-      const [cell, formulaString] = formula.split('=');
-      if (cell && formulaString) {
-        ws[cell] = { f: formulaString.trim() };
-      }
-    });
-
-    // Trigger download
-    const buffer = write(wb, { bookType: 'xlsx', type: 'buffer' });
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'generated-spreadsheet.xlsx';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToCSV = () => {
-    if (!spreadsheetData) return;
-
-    const ws = utils.json_to_sheet(spreadsheetData.data);
-    const csv = utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'generated-spreadsheet.csv';
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -214,49 +171,23 @@ export default function Home() {
 
         {/* Spreadsheet Preview */}
         {hasGenerated && (
-          <>
-            <div className="mt-8 w-full bg-white rounded-xl border border-gray-200 p-4 min-h-[300px]">
-              {loading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="mt-8 w-full bg-white rounded-xl border border-gray-200 p-4 min-h-[300px]">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            ) : spreadsheetData ? (
+              <div className="text-left whitespace-pre-wrap text-gray-900 font-normal p-6 space-y-4">
+                <div className="prose prose-gray max-w-none">
+                  {spreadsheetData.result}
                 </div>
-              ) : spreadsheetData ? (
-                <SpreadsheetPreview data={spreadsheetData} />
-              ) : (
-                <p className="text-gray-400 flex items-center justify-center h-full">
-                  Your generated spreadsheet will appear here
-                </p>
-              )}
-            </div>
-
-            {/* Export buttons */}
-            <div className="flex justify-center gap-4">
-              <button 
-                onClick={exportToCSV}
-                disabled={!spreadsheetData}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Export as CSV
-              </button>
-              <button 
-                onClick={exportToExcel}
-                disabled={!spreadsheetData}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Export as XLSX
-              </button>
-            </div>
-          </>
+              </div>
+            ) : (
+              <p className="text-gray-400 flex items-center justify-center h-full">
+                AI response will appear here
+              </p>
+            )}
+          </div>
         )}
       </div>
 
