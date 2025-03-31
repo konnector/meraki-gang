@@ -1,69 +1,272 @@
+'use client';
+
+import { useState } from 'react';
+import { utils, write } from 'xlsx';
+import SpreadsheetPreview from '@/components/SpreadsheetPreview';
+
+type SpreadsheetData = {
+  headers: string[];
+  data: Record<string, string | number>[];
+  formulas: string[];
+};
+
 export default function Home() {
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetData | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [textareaHeight, setTextareaHeight] = useState(48);
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPrompt(e.target.value);
+    // Auto-resize textarea
+    e.target.style.height = '48px';
+    const scrollHeight = e.target.scrollHeight;
+    e.target.style.height = `${Math.min(scrollHeight, 400)}px`; // Max height of 400px
+    setTextareaHeight(Math.min(scrollHeight, 400));
+  };
+
+  const generateSpreadsheet = async () => {
+    try {
+      setLoading(true);
+      setHasGenerated(true);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+      setSpreadsheetData(data);
+    } catch (error) {
+      console.error('Error generating spreadsheet:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportToExcel = () => {
+    if (!spreadsheetData) return;
+
+    const ws = utils.json_to_sheet(spreadsheetData.data);
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, 'Sheet1');
+    
+    // Apply formulas if any
+    spreadsheetData.formulas.forEach((formula) => {
+      const [cell, formulaString] = formula.split('=');
+      if (cell && formulaString) {
+        ws[cell] = { f: formulaString.trim() };
+      }
+    });
+
+    // Trigger download
+    const buffer = write(wb, { bookType: 'xlsx', type: 'buffer' });
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-spreadsheet.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToCSV = () => {
+    if (!spreadsheetData) return;
+
+    const ws = utils.json_to_sheet(spreadsheetData.data);
+    const csv = utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-spreadsheet.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <main className="min-h-screen flex flex-col items-center pt-70 p-3 bg-[#FCFCF9]">
-      <div className="w-full max-w-2xl mx-auto text-center space-y-6">
+    <main className={`min-h-screen flex flex-col items-center ${!hasGenerated ? 'justify-center' : 'pt-10'} p-3 bg-[#FCFCF9]`}>
+      <div className={`w-full max-w-2xl mx-auto text-center space-y-6 ${hasGenerated ? 'mb-8' : ''}`}>
         <h1 className="text-3xl font-medium text-[#1a1a1a]">
-          What do you want to know?
+          Generate Spreadsheets with AI
         </h1>
+        <p className="text-gray-600 -mt-2">
+          Describe the spreadsheet you need, and I&apos;ll create it instantly
+        </p>
         
-        <div className="relative w-full">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Ask anything..."
-              className="w-full p-3 pr-12 text-base bg-white border border-[#e5e7eb] rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 text-gray-900"
-            />
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-              <button className="p-1.5 text-gray-500 hover:text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="2" y1="12" x2="22" y2="12"/>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                </svg>
-              </button>
-              <button className="p-1.5 text-gray-500 hover:text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                </svg>
-              </button>
-              <button className="p-1.5 bg-[#f5f5f5] rounded-lg text-gray-700 hover:bg-gray-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14"/>
-                  <path d="m12 5 7 7-7 7"/>
-                </svg>
-              </button>
+        <div className="bg-[#FCFCF9] w-full outline-none focus-within:outline-none focus-within:ring-1 focus-within:ring-gray-300 font-sans flex items-center text-gray-900 placeholder-gray-500 border border-gray-200 shadow-sm shadow-gray-900/5 rounded-3xl px-4 pt-3 pb-3 grid items-center">
+          <div className="grid grid-rows-[1fr,auto] grid-cols-3">
+            <div className="col-start-1 col-end-4 pb-2 overflow-hidden relative flex h-full w-full">
+              <textarea
+                autoFocus
+                value={prompt}
+                onChange={handleTextareaChange}
+                placeholder="Ask anything..."
+                className="overflow-auto max-h-[45vh] lg:max-h-[4vh] sm:max-h-[25vh] outline-none w-full font-sans resize-none selection:bg-black-100 selection:text-gray-900 bg-[#FCFCF9] text-gray-900 placeholder-gray-500 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"
+                rows={2}
+                style={{ height: `${textareaHeight}px` }}
+              />
             </div>
-          </div>
-          <div className="absolute left-3 top-full mt-2 flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-[#f5f5f5] px-2.5 py-0.5 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                <line x1="12" y1="22.08" x2="12" y2="12"/>
-              </svg>
-              <span className="text-xs text-gray-600">Deep Research</span>
+            <div className="bg-[#FCFCF9] gap-2 flex rounded-l-lg col-start-1 row-start-2 -ml-1">
+              <div className="gap-2 flex">
+                <div className="gap-2 flex items-center">
+                  <button
+                    type="button"
+                    className="bg-gray-100 text-gray-900 hover:text-gray-600 border border-transparent px-2.5 font-sans outline-none transition duration-300 ease-out select-none items-center relative justify-center rounded-full cursor-pointer active:scale-[0.97] text-sm h-8 aspect-square"
+                  >
+                    <div className="flex items-center min-w-0 font-medium gap-1.5 justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.875" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                      </svg>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="bg-gray-100 text-gray-900 hover:text-gray-600 border border-transparent font-sans outline-none transition duration-300 ease-out select-none items-center relative justify-center rounded-full cursor-pointer active:scale-[0.97] text-sm h-8 pl-2.5 pr-3"
+                  >
+                    <div className="flex items-center min-w-0 font-medium gap-1.5 justify-center">
+                      <div className="flex shrink-0 items-center justify-center w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.875" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 12v.01"/>
+                          <path d="M19.071 4.929c-1.562 -1.562 -6 .337 -9.9 4.243c-3.905 3.905 -5.804 8.337 -4.242 9.9c1.562 1.561 6 -.338 9.9 -4.244c3.905 -3.905 5.804 -8.337 4.242 -9.9"/>
+                          <path d="M4.929 4.929c-1.562 1.562 .337 6 4.243 9.9c3.905 3.905 8.337 5.804 9.9 4.242c1.561 -1.562 -.338 -6 -4.244 -9.9c-3.905 -3.905 -8.337 -5.804 -9.9 -4.242"/>
+                        </svg>
+                      </div>
+                      <div className="text-align-center relative truncate leading-loose -mb-px">Deep Research</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[#FCFCF9] flex items-center justify-self-end rounded-full col-start-3 row-start-2 -mr-1">
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="hover:bg-gray-100 text-gray-500 hover:text-gray-900 font-sans outline-none transition duration-300 ease-out select-none items-center relative justify-center rounded-full cursor-pointer active:scale-[0.97] text-sm h-8 aspect-square"
+                >
+                  <div className="flex items-center min-w-0 font-medium gap-1.5 justify-center">
+                    <div className="flex shrink-0 items-center justify-center w-4 h-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.875" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+                <div className="ml-2 flex gap-2">
+                  <button
+                    onClick={generateSpreadsheet}
+                    disabled={loading || !prompt}
+                    className={`${
+                      !prompt || loading
+                        ? 'bg-gray-200 text-gray-400 cursor-default'
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                    } font-sans outline-none transition duration-300 ease-out select-none items-center relative justify-center rounded-full active:scale-[0.97] text-sm h-8 aspect-square`}
+                  >
+                    <div className="flex items-center min-w-0 font-medium gap-1.5 justify-center">
+                      <div className="flex shrink-0 items-center justify-center w-4 h-4">
+                        {loading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.875" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14"/>
+                            <path d="M13 18l6 -6"/>
+                            <path d="M13 6l6 6"/>
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Example prompts */}
+        {!hasGenerated && (
+          <div className="mt-8">
+            <p className="text-sm text-gray-500 mb-3">Try these examples:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button 
+                onClick={() => setPrompt("Create a monthly budget tracker with income, expenses, and savings categories")}
+                className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Monthly Budget
+              </button>
+              <button 
+                onClick={() => setPrompt("Generate a project timeline with tasks, deadlines, and progress tracking")}
+                className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Project Timeline
+              </button>
+              <button 
+                onClick={() => setPrompt("Make an inventory management sheet with items, quantities, and reorder points")}
+                className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Inventory Tracker
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Spreadsheet Preview */}
+        {hasGenerated && (
+          <>
+            <div className="mt-8 w-full bg-white rounded-xl border border-gray-200 p-4 min-h-[300px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                </div>
+              ) : spreadsheetData ? (
+                <SpreadsheetPreview data={spreadsheetData} />
+              ) : (
+                <p className="text-gray-400 flex items-center justify-center h-full">
+                  Your generated spreadsheet will appear here
+                </p>
+              )}
+            </div>
+
+            {/* Export buttons */}
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={exportToCSV}
+                disabled={!spreadsheetData}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export as CSV
+              </button>
+              <button 
+                onClick={exportToExcel}
+                disabled={!spreadsheetData}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export as XLSX
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <footer className="fixed bottom-0 w-full p-3 border-t bg-white">
         <nav className="max-w-6xl mx-auto flex items-center justify-center gap-5 text-xs text-gray-500">
-          <a href="#" className="hover:text-gray-900">Pro</a>
-          <a href="#" className="hover:text-gray-900">Enterprise</a>
+          <a href="#" className="hover:text-gray-900">Examples</a>
           <a href="#" className="hover:text-gray-900">API</a>
+          <a href="#" className="hover:text-gray-900">Pricing</a>
+          <a href="#" className="hover:text-gray-900">Documentation</a>
           <a href="#" className="hover:text-gray-900">Blog</a>
-          <a href="#" className="hover:text-gray-900">Careers</a>
-          <a href="#" className="hover:text-gray-900">Store</a>
-          <a href="#" className="hover:text-gray-900">Finance</a>
-          <div className="relative group">
-            <button className="hover:text-gray-900 flex items-center gap-1">
-              English
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
-            </button>
-          </div>
         </nav>
       </footer>
     </main>
