@@ -52,7 +52,8 @@ function applyColumnFormatting(worksheet: ExcelJS.Worksheet, headers: string[]) 
 
 export async function generateSpreadsheet(
   headers: string[],
-  formulas: { cell: string; formula: string }[]
+  formulas: { cell: string; formula: string }[],
+  data?: string[][] // Add optional data parameter
 ) {
   // Create a new workbook and worksheet
   const workbook = new ExcelJS.Workbook();
@@ -71,7 +72,20 @@ export async function generateSpreadsheet(
   };
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  // Apply formula
+  // Add data rows if provided
+  if (data) {
+    data.forEach((row, rowIndex) => {
+      // rowIndex + 2 because row 1 is headers
+      const worksheetRow = worksheet.getRow(rowIndex + 2);
+      row.forEach((cell, cellIndex) => {
+        // Try to convert numbers from strings
+        const value = !isNaN(Number(cell)) ? Number(cell) : cell;
+        worksheetRow.getCell(cellIndex + 1).value = value;
+      });
+    });
+  }
+
+  // Apply formulas after data is added
   formulas.forEach(({ cell, formula }) => {
     const cellRef = worksheet.getCell(cell);
     // Set the value as a formula
@@ -83,7 +97,12 @@ export async function generateSpreadsheet(
   
   // Auto-size columns for better readability
   worksheet.columns.forEach(column => {
-    column.width = 15; // Default width
+    let maxLength = 0;
+    column.eachCell({ includeEmpty: true }, (cell) => {
+      const length = cell.value ? cell.value.toString().length : 10;
+      maxLength = Math.max(maxLength, length);
+    });
+    column.width = Math.min(maxLength + 2, 30); // Cap width at 30
   });
 
   // Add auto-filter to headers

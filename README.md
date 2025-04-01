@@ -13,27 +13,32 @@ A modern web application that generates structured spreadsheets from natural lan
 ## Project Structure
 
 ```
-├── .next/                # Next.js build output
-├── node_modules/         # Project dependencies
-├── public/               # Static assets
-├── src/                  # Source code
-│   ├── app/              # Next.js app directory
-│   │   ├── api/          # API endpoints
-│   │   │   └── generate/ # Spreadsheet generation API
-│   │   │       └── route.ts    # API route for OpenAI integration
-│   │   ├── globals.css   # Global styles
-│   │   ├── layout.tsx    # Root layout component
-│   │   └── page.tsx      # Main application page
-│   ├── components/       # Reusable React components
-│   │   └── SpreadsheetPreview.tsx  # Component for rendering spreadsheet preview
-│   └── lib/              # Utility functions and libraries
-│       └── spreadsheetGenerator.ts  # Library for generating Excel spreadsheets
-├── .env.local            # Environment variables (API keys)
-├── next.config.ts        # Next.js configuration
-├── package.json          # Project dependencies and scripts
-├── pnpm-lock.yaml        # Package lock file for pnpm
-├── tsconfig.json         # TypeScript configuration
-└── README.md             # Project documentation
+├── .next/                      # Next.js build output directory
+├── node_modules/               # Project dependencies
+├── public/                     # Static assets and public files
+├── src/                       # Source code directory
+│   ├── app/                   # Next.js App Router directory
+│   │   ├── api/              # API route handlers
+│   │   │   ├── enhance/      # Spreadsheet enhancement API endpoints
+│   │   │   └── generate/     # Spreadsheet generation API endpoints
+│   │   ├── globals.css       # Global CSS styles
+│   │   ├── layout.tsx        # Root layout component
+│   │   ├── page.tsx          # Main application page
+│   │   └── favicon.ico       # Website favicon
+│   └── lib/                  # Shared utilities and helper functions
+│       └── spreadsheetGenerator.ts  # Excel/CSV generation logic
+├── .env.local                 # Local environment variables
+├── .gitignore                 # Git ignore rules
+├── README.md                  # Project documentation
+├── eslint.config.mjs          # ESLint configuration
+├── next.config.ts             # Next.js configuration
+├── next-env.d.ts             # Next.js TypeScript declarations
+├── package.json              # Project metadata and dependencies
+├── package-lock.json         # NPM dependency lock file
+├── pnpm-lock.yaml            # PNPM dependency lock file
+├── postcss.config.mjs        # PostCSS configuration for Tailwind
+├── tailwind.config.js        # Tailwind CSS configuration
+└── tsconfig.json             # TypeScript configuration
 ```
 
 ## File Descriptions
@@ -46,7 +51,6 @@ A modern web application that generates structured spreadsheets from natural lan
 
 - **src/lib/spreadsheetGenerator.ts**: Utility module using ExcelJS to create downloadable XLSX files from the generated spreadsheet data, including headers and formulas.
 
-- **src/components/SpreadsheetPreview.tsx**: Component for rendering tabular data preview using TanStack Table library, showing the generated spreadsheet in the UI before download.
 
 ### Configuration Files
 
@@ -91,7 +95,6 @@ pnpm dev
 
 1. Enter a description of the spreadsheet you need (e.g., "Create a monthly budget tracker with income and expenses")
 2. Click the generate button
-3. Preview the generated spreadsheet
 4. Export to your preferred format (XLSX)
 
 ## Example Prompts
@@ -106,7 +109,6 @@ pnpm dev
 - TypeScript
 - OpenAI API (GPT-4)
 - ExcelJS for XLSX generation
-- TanStack Table for data display
 - Tailwind CSS for styling
 
 ## License
